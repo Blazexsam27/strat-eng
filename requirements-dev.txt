@@ -1,0 +1,16 @@
+# Contents of /OpenOpt-RiskEngine/OpenOpt-RiskEngine/requirements-dev.txt
+
+pytest
+black
+flake8
+mypy
+jupyter
+requests
+httpx
+pandas
+numpy
+matplotlib
+scikit-learn
+seaborn
+plotly
+dash
