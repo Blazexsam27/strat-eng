@@ -1,15 +1,15 @@
 import streamlit as st
 import pandas as pd
 
-from openopt_riskengine.config import DEFAULT_TICKER, START_DATE, END_DATE
-from openopt_riskengine.data.fetcher import fetch_price_data
-from openopt_riskengine.backtesting.engine import run_backtest
+from config import DEFAULT_TICKER, START_DATE, END_DATE
+from data.fetcher import fetch_price_data
+from backtesting.engine import run_backtest
 
-from openopt_riskengine.strategies.sma_crossover import SMACrossoverStrategy
-from openopt_riskengine.strategies.buy_and_hold_strategy import BuyAndHoldStrategy
-from openopt_riskengine.strategies.ema_crossover import EMACrossoverStrategy
-from openopt_riskengine.strategies.momentum_strategy import MomentumStrategy
-from openopt_riskengine.strategies.rsi_strategy import RSIStrategy
+from strategies.sma_crossover import SMACrossoverStrategy
+from strategies.buy_and_hold_strategy import BuyAndHoldStrategy
+from strategies.ema_crossover import EMACrossoverStrategy
+from strategies.momentum_strategy import MomentumStrategy
+from strategies.rsi_strategy import RSIStrategy
 
 st.set_page_config(page_title="OpenOpt RiskEngine — Strategy Dashboard", layout="wide")
 

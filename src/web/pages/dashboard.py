@@ -7,20 +7,19 @@ import streamlit as st
 import os
 import sys
 
-from openopt_riskengine.config import DEFAULT_TICKER, START_DATE, END_DATE
+# ensure project 'src' dir is on sys.path so relative imports work when running streamlit
+project_src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if project_src not in sys.path:
+    sys.path.insert(0, project_src)
+
+from config import DEFAULT_TICKER, START_DATE, END_DATE
 from data.fetcher import fetch_price_data
 from backtesting.engine import run_backtest
-
 from strategies.sma_crossover import SMACrossoverStrategy
 from strategies.buy_and_hold_strategy import BuyAndHoldStrategy
 from strategies.ema_crossover import EMACrossoverStrategy
 from strategies.momentum_strategy import MomentumStrategy
 from strategies.rsi_strategy import RSIStrategy
-
-# ensure project 'src' dir is on sys.path so "import openopt_riskengine" works when running streamlit
-project_src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-if project_src not in sys.path:
-    sys.path.insert(0, project_src)
 
 st.set_page_config(
     page_title="OpenOpt RiskEngine", layout="wide", initial_sidebar_state="expanded"
@@ -252,11 +251,16 @@ def main():
                 line=dict(color="#222222"),
             )
         )
+        # handle both simple string columns and MultiIndex tuples
         for c in df_first.columns:
-            if c.startswith("SMA_") or c.startswith("EMA_"):
+            col_str = str(c)  # convert tuple to string if needed
+            if "SMA_" in col_str or "EMA_" in col_str:
                 price_fig.add_trace(
                     go.Scatter(
-                        x=df_first.index, y=df_first[c], name=c, line=dict(dash="dot")
+                        x=df_first.index,
+                        y=df_first[c],
+                        name=col_str,
+                        line=dict(dash="dot"),
                     )
                 )
         price_fig.update_layout(height=350, margin=dict(t=10, b=10))
@@ -265,13 +269,14 @@ def main():
         # Return distribution + drawdown
         st.subheader("Return distribution & Drawdown")
         r1, r2 = st.columns([2, 1])
-        net_returns = pd.Series(dtype=float)
+        net_returns_list = []
         for name, res in results.items():
             if "net_strategy_returns" in res["df"].columns:
-                net_returns = net_returns.append(
+                net_returns_list.append(
                     res["df"]["net_strategy_returns"].dropna().rename(name)
                 )
-        if not net_returns.empty:
+        if net_returns_list:
+            net_returns = pd.concat(net_returns_list)
             # histogram for the last selected strategy
             last = list(results.values())[-1]["df"]
             fig_hist = px.histogram(
@@ -287,9 +292,22 @@ def main():
         dd = results[first_name]["df"].copy()
         running_max = dd["equity_curve"].cummax()
         dd["drawdown"] = (dd["equity_curve"] - running_max) / running_max
+
+        # flatten MultiIndex columns to single-level strings for plotly express
+        if isinstance(dd.columns, pd.MultiIndex):
+            dd.columns = [
+                f"{col[0]}_{col[1]}" if col[1] else col[0] for col in dd.columns
+            ]
+
+        dd_reset = dd.reset_index()
+        # after reset_index(), the index becomes a column named "Date" (or whatever the index name is)
+        index_col_name = dd_reset.columns[
+            0
+        ]  # first column after reset is the old index
+
         fig_dd = px.area(
-            dd,
-            x=dd.index,
+            dd_reset,
+            x=index_col_name,
             y="drawdown",
             title=f"Drawdown — {first_name}",
             labels={"drawdown": "Drawdown"},
