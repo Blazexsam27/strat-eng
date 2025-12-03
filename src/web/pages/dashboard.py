@@ -7,7 +7,6 @@ import streamlit as st
 import os
 import sys
 
-# ensure project 'src' dir is on sys.path so relative imports work when running streamlit
 project_src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if project_src not in sys.path:
     sys.path.insert(0, project_src)
