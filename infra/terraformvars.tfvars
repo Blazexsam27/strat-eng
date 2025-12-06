@@ -1,0 +1,6 @@
+project_id         = "test-automation-480110"
+region             = "europe-west4"
+zone               = "europe-west4-b"
+environment        = "dev"
+machine_type       = "e2-micro"
+ssh_user           = "ubuntu"
