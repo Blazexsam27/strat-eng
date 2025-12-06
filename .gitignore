@@ -1,4 +1,133 @@
-test-automation-480110-60b6b97b9b3c
-test-automation-480110-60b6b97b9b3c.json
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
 
+# Virtual environments
+venv/
+.env/
+.env.*
+.venv/
+env/
+ENV/
+ENV.bak/
+venv.bak/
+
+# Distribution / packaging
+build/
+dist/
+eggs/
+*.egg
+*.egg-info/
+pip-wheel-metadata/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Type checking / caches
+.mypy_cache/
+.pyre/
+__pypackages__/
+
+# IDEs / editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs / temp
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# Streamlit
+.streamlit/
+# if you store secrets in .streamlit/secrets.toml, ignore it
+.streamlit/secrets.toml
+
+# Data / large artifacts
+# Keep small committed CSVs if desired; ignore large/raw data dumps and caches
+data/*.parquet
+data/*.feather
+data/*.pickle
+data/*_dump.*
+data/*_raw.*
+# optionally ignore all CSVs (uncomment if you don't want CSVs in repo)
+# data/*.csv
+
+# Database files
+*.sqlite
+*.db
+*.db-journal
+
+# Keys / credentials / secrets
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+*.asc
+*.env.*
+# project-specific keys (already seen in project)
+test-automation-*.json
 gcp-terraform-key.json
+gcp-*.json
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+crash.log
+
+infra/.terraform/
+
+
+# Docker
+docker-compose.override.yml
+**/docker-compose.override.yml
+*.dockerignore
+
+# Coverage / profiling
+coverage/
+.prof
+
+# Build artifacts
+*.so
+*.dylib
+*.dll
+
+# Misc
+*.bak
+*.swp
+*~
+thumbs.db
+
+# Windows specific
+$RECYCLE.BIN/
+
+# Optional: lockfiles (if you prefer to keep them remove)
+# Pipenv / Poetry / Pipfile
+Pipfile.lock
+poetry.lock
+
+# End
