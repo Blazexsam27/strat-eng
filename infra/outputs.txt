@@ -1,4 +1,0 @@
-bucket_name = "test-automation-480110-backtesting-data"
-ssh_command = "gcloud compute ssh dev-backtesting-vm --zone=us-central1-a"
-vm_external_ip = "34.135.58.58"
-vm_name = "dev-backtesting-vm"

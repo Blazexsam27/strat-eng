@@ -30,7 +30,7 @@ variable "environment" {
 variable "machine_type" {
   description = "VM machine type"
   type        = string
-  default     = "e2-micro"
+  default     = "e2-medium"
 }
 
 variable "ssh_user" {

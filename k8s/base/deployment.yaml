@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openopt-riskengine-app
+  namespace: openopt-riskengine
+  labels:
+    app: openopt-riskengine
+    component: webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openopt-riskengine
+      component: webapp
+  template:
+    metadata:
+      labels:
+        app: openopt-riskengine
+        component: webapp
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8501"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: streamlit-app
+          image: gcr.io/test-automation-480110/openopt-riskengine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8501
+              name: http
+              protocol: TCP
+          env:
+            - name: STREAMLIT_SERVER_PORT
+              value: "8501"
+            - name: STREAMLIT_SERVER_ADDRESS
+              value: "0.0.0.0"
+          envFrom:
+            - configMapRef:
+                name: openopt-riskengine-config
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+            initialDelaySeconds: 10
+            periodSeconds: 5

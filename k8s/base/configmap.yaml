@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openopt-riskengine-config
+  namespace: openopt-riskengine
+data:
+  APP_NAME: "Openopt Risk Engine"
+  LOG_LEVEL: "INFO"
+  # Add any app-specific configs here
