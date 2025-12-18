@@ -222,6 +222,7 @@ def main():
         st.subheader("Equity curves")
         if not equity_df.empty:
             fig = go.Figure()
+            print("EQUITY----------------------->", equity_df.head())
             for col in equity_df.columns:
                 fig.add_trace(
                     go.Scatter(
@@ -238,26 +239,67 @@ def main():
             st.plotly_chart(fig, use_container_width=True)
 
         # Price + indicators (for first selected strategy df)
+        # flatten MultiIndex columns
+
         first_name = next(iter(results.keys()))
         df_first = results[first_name]["df"]
-        st.subheader(f"Price and indicators — {first_name}")
+
+        df_first_copy = df_first.copy()
+
+        df_first_copy.columns = [
+            col[0] if col[1] == "" else f"{col[0]}_{col[1]}"
+            for col in df_first_copy.columns
+        ]
+        # st.subheader(f"Price and indicators — {first_name}")
+        print("Df----------------------->", df_first_copy.columns)
+        # print("Df----------------------->", df_first.head())
+        # price_fig = go.Figure()
+        # price_fig.add_trace(
+        #     go.Scatter(
+        #         x=df_first.index,
+        #         y=df_first["Close"],
+        #         name="Close",
+        #         line=dict(color="#222222"),
+        #     )
+        # )
+
         price_fig = go.Figure()
+
         price_fig.add_trace(
             go.Scatter(
-                x=df_first.index,
-                y=df_first["Close"],
+                x=df_first_copy.index,
+                y=df_first_copy["Close_NVDA"],
                 name="Close",
                 line=dict(color="#222222"),
             )
         )
+
+        price_fig.add_trace(
+            go.Scatter(
+                x=df_first_copy.index,
+                y=df_first_copy["SMA_20"],
+                name="SMA 20",
+                line=dict(color="blue"),
+            )
+        )
+
+        price_fig.add_trace(
+            go.Scatter(
+                x=df_first_copy.index,
+                y=df_first_copy["SMA_50"],
+                name="SMA 50",
+                line=dict(color="red"),
+            )
+        )
+
         # handle both simple string columns and MultiIndex tuples
-        for c in df_first.columns:
+        for c in df_first_copy.columns:
             col_str = str(c)  # convert tuple to string if needed
             if "SMA_" in col_str or "EMA_" in col_str:
                 price_fig.add_trace(
                     go.Scatter(
-                        x=df_first.index,
-                        y=df_first[c],
+                        x=df_first_copy.index,
+                        y=df_first_copy[c],
                         name=col_str,
                         line=dict(dash="dot"),
                     )

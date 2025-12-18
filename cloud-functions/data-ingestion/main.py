@@ -45,11 +45,18 @@ def ingest_stock_data(request):
         logger.info(f"Starting data ingestion for {len(symbols)} symbols")
         logger.info(f"Symbols: {symbols}")
         logger.info(f"Lookback period: {lookback_days} days")
-        logger.info(f"Target: {PROJECT_ID}.{DATASET_ID}.{TABLE_ID}")
+
+        if not PROJECT_ID or not DATASET_ID:
+            return {
+                "status": "error",
+                "message": "Missing environment variables: GCP_PROJECT or BIGQUERY_DATASET",
+            }, 500
+
+        table_ref = f"{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}"
+        logger.info(f"Target table: {table_ref}")
 
         # Initialize BigQuery client
         client = bigquery.Client(project=PROJECT_ID)
-        table_ref = f"{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}"
 
         all_data = []
         errors = []
@@ -64,36 +71,84 @@ def ingest_stock_data(request):
                 end_date = datetime.now()
                 start_date = end_date - timedelta(days=lookback_days)
 
-                df = yf.download(
-                    symbol,
+                logger.info(
+                    f"Date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
+                )
+
+                # Use Ticker object for more reliable single-symbol fetching
+                ticker = yf.Ticker(symbol)
+                df = ticker.history(
                     start=start_date.strftime("%Y-%m-%d"),
                     end=end_date.strftime("%Y-%m-%d"),
-                    progress=False,
                 )
 
                 if df.empty:
                     logger.warning(f"No data retrieved for {symbol}")
                     continue
 
+                # Debug: Log available columns
+                logger.info(f"DataFrame columns for {symbol}: {df.columns.tolist()}")
+                logger.info(f"DataFrame shape for {symbol}: {df.shape}")
+                logger.info(f"DataFrame index type: {type(df.index)}")
+
                 # Prepare data for BigQuery
-                df = df.reset_index()
+                df = df.reset_index()  # Move Date from index to column
+
+                logger.info(f"After reset_index - columns: {df.columns.tolist()}")
+
                 df["symbol"] = symbol
                 df["inserted_at"] = datetime.utcnow()
 
-                # Rename columns to match BigQuery schema
-                df = df.rename(
-                    columns={
-                        "Date": "date",
-                        "Open": "open",
-                        "High": "high",
-                        "Low": "low",
-                        "Close": "close",
-                        "Adj Close": "adj_close",
-                        "Volume": "volume",
-                    }
-                )
+                # Create a mapping dictionary for available columns
+                column_mapping = {}
 
-                # Select only required columns
+                # Handle date column (could be 'Date' or 'date' depending on yfinance version)
+                if "Date" in df.columns:
+                    column_mapping["Date"] = "date"
+                elif "index" in df.columns:
+                    column_mapping["index"] = "date"
+
+                # Map all available price columns
+                for col in ["Open", "High", "Low", "Close", "Adj Close", "Volume"]:
+                    if col in df.columns:
+                        # Convert column names: 'Adj Close' -> 'adj_close', 'Close' -> 'close', etc.
+                        new_name = col.lower().replace(" ", "_")
+                        column_mapping[col] = new_name
+
+                # Rename available columns
+                df = df.rename(columns=column_mapping)
+
+                logger.info(f"After rename - columns: {df.columns.tolist()}")
+
+                # Handle missing 'adj_close' column
+                if "adj_close" not in df.columns:
+                    if "close" in df.columns:
+                        # Use 'close' as a fallback for 'adj_close'
+                        df["adj_close"] = df["close"]
+                        logger.warning(
+                            f"No 'Adj Close' column for {symbol}, using 'close' as fallback"
+                        )
+                    else:
+                        # If neither exists, create a placeholder
+                        df["adj_close"] = 0.0
+                        logger.error(f"No price columns found for {symbol}")
+
+                # Ensure all required columns exist with default values
+                for col, default_value in [
+                    ("open", 0.0),
+                    ("high", 0.0),
+                    ("low", 0.0),
+                    ("close", 0.0),
+                    ("adj_close", 0.0),
+                    ("volume", 0),
+                ]:
+                    if col not in df.columns:
+                        df[col] = default_value
+                        logger.warning(
+                            f"Missing column {col} for {symbol}, using default {default_value}"
+                        )
+
+                # Select only required columns (in correct order)
                 df = df[
                     [
                         "symbol",
@@ -108,11 +163,25 @@ def ingest_stock_data(request):
                     ]
                 ]
 
-                # Convert date to string format for BigQuery
-                df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
+                # Convert date to proper format for BigQuery
+                # Handle various date types that might come from yfinance
+                try:
+                    if pd.api.types.is_datetime64_any_dtype(df["date"]):
+                        df["date"] = df["date"].dt.date
+                    else:
+                        df["date"] = pd.to_datetime(df["date"]).dt.date
+                except Exception as date_error:
+                    logger.error(f"Date conversion error for {symbol}: {date_error}")
+                    logger.info(f"Date column dtype: {df['date'].dtype}")
+                    logger.info(f"Date column sample: {df['date'].head()}")
+                    raise
 
                 # Convert volume to integer
                 df["volume"] = df["volume"].fillna(0).astype(int)
+
+                # Convert numeric columns to float
+                for col in ["open", "high", "low", "close", "adj_close"]:
+                    df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
 
                 all_data.append(df)
                 success_count += 1
@@ -120,7 +189,7 @@ def ingest_stock_data(request):
 
             except Exception as e:
                 error_msg = f"Error fetching data for {symbol}: {str(e)}"
-                logger.error(error_msg)
+                logger.error(error_msg, exc_info=True)
                 errors.append(error_msg)
 
         if not all_data:
@@ -129,6 +198,8 @@ def ingest_stock_data(request):
                 "status": "error",
                 "message": "No data was successfully fetched",
                 "errors": errors,
+                "symbols_requested": len(symbols),
+                "symbols_processed": 0,
             }, 500
 
         # Combine all dataframes
@@ -181,3 +252,14 @@ def ingest_stock_data(request):
             "message": error_msg,
             "timestamp": datetime.utcnow().isoformat(),
         }, 500
+
+
+# Optional: Health check endpoint
+@functions_framework.http
+def health_check(request):
+    """Simple health check endpoint"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "service": "stock-data-ingestion",
+    }, 200
