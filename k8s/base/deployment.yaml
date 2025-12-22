@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: streamlit-app
-          image: gcr.io/test-automation-480110/openopt-riskengine
+          image: gcr.io/test-automation-480110/openopt-riskengine:v2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8501
