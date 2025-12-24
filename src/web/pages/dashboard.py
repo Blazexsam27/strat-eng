@@ -265,10 +265,17 @@ def main():
 
         price_fig = go.Figure()
 
+        close_cols = [
+            c for c in df_first_copy.columns if str(c).lower().startswith("close")
+        ]
+        close_series = (
+            df_first_copy[close_cols[0]] if close_cols else df_first_copy.iloc[:, 0]
+        )
+
         price_fig.add_trace(
             go.Scatter(
                 x=df_first_copy.index,
-                y=df_first_copy["Close_NVDA"],
+                y=close_series,
                 name="Close",
                 line=dict(color="#222222"),
             )
