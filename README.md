@@ -88,3 +88,14 @@ The OpenOpt-RiskEngine is designed to provide a comprehensive framework for risk
 
 ## Conclusion
 The architecture of OpenOpt-RiskEngine is designed to be modular and extensible, facilitating the development and integration of new features while maintaining a clear separation of concerns among different components. This structure supports both the core functionalities of risk assessment and the flexibility needed for backtesting trading strategies.
+
+
+Copyright (c) 2025 Sanju Raj Prasad
+
+This software is provided for educational and research purposes only.
+
+Commercial use, live trading, signal selling, or monetization
+of any kind is strictly prohibited without explicit written permission.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
